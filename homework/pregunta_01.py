@@ -4,6 +4,9 @@
 """
 Escriba el codigo que ejecute la accion solicitada en cada pregunta.
 """
+import os
+import pandas as pd
+import zipfile
 
 
 def pregunta_01():
@@ -71,3 +74,69 @@ def pregunta_01():
 
 
     """
+    zip_file = "files/input.zip"
+    input_dir = "input"
+
+    if not os.path.exists(zip_file):
+        print(f"El archivo {zip_file} no existe.")
+        return
+
+    with zipfile.ZipFile(zip_file, "r") as zip_ref:
+        zip_ref.extractall(input_dir)
+        print(
+            f"El archivo {zip_file} ha sido descomprimido correctamente en {input_dir}"
+        )
+
+    output_dir = os.path.join("files", "output")
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    test_df = pd.DataFrame(columns=["phrase", "target"])
+    train_df = pd.DataFrame(columns=["phrase", "target"])
+
+    test_dir = os.path.join("input", "input", "test")
+    train_dir = os.path.join("input", "input", "train")
+
+    sentiment_dirs = ["positive", "negative", "neutral"]
+
+    for sentiment in sentiment_dirs:
+        sentiment_path = os.path.join(test_dir, sentiment)
+
+        if not os.path.exists(sentiment_path):
+            print(f"El directorio {sentiment_path} no existe.")
+            continue
+
+        for filename in os.listdir(sentiment_path):
+            file_path = os.path.join(sentiment_path, filename)
+
+            if os.path.isfile(file_path):
+                with open(file_path, "r", encoding="utf-8") as file:
+                    phrase = file.read().strip()
+
+                test_df = test_df._append(
+                    {"phrase": phrase, "target": sentiment}, ignore_index=True
+                )
+
+    for sentiment in sentiment_dirs:
+        sentiment_path = os.path.join(train_dir, sentiment)
+
+        if not os.path.exists(sentiment_path):
+            print(f"El directorio {sentiment_path} no existe.")
+            continue
+
+        for filename in os.listdir(sentiment_path):
+            file_path = os.path.join(sentiment_path, filename)
+
+            if os.path.isfile(file_path):
+                with open(file_path, "r", encoding="utf-8") as file:
+                    phrase = file.read().strip()
+
+                train_df = train_df._append(
+                    {"phrase": phrase, "target": sentiment}, ignore_index=True
+                )
+
+    test_df = test_df.sample(frac=1, random_state=42).reset_index(drop=True)
+    train_df = train_df.sample(frac=1, random_state=42).reset_index(drop=True)
+
+    test_df.to_csv(os.path.join("files/output", "test_dataset.csv"), index=False)
+    train_df.to_csv(os.path.join("files/output", "train_dataset.csv"), index=False)
